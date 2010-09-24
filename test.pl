@@ -3,28 +3,29 @@
 use strict;
 use warnings;
 use Carp;
-use Benchmark qw(cmpthese);
+use Benchmark qw(timethese cmpthese);
 use lib qw(lib);
 use Readonly;
 use File::Basename;
-use Test::More;
-use Test::Regression;
 use Perl6::Slurp;
 
 use Null;
 use StripScripts;
 use HTMLTidy;
+use Defang;
+# ToDO: Strip, Detoxify, Marpa
 
-Readonly my %ROUTINES => (
+my %routines = (
     null => \&Null::filter,
     stripscripts => \&StripScripts::filter,
-#    htmltidy=>\&HTMLTidy::filter,
+    defang=>\&Defang::filter,
+    htmltidy=>\&HTMLTidy::filter,
 );
-Readonly my $COUNT => 1000;
+Readonly my $COUNT => 10_000;
 
 my @tests = glob 'in/*';
 
-plan tests => (keys %ROUTINES)*@tests*$COUNT;
+my %success;
 
 foreach my $t (@tests) {
     compare($t);
@@ -37,14 +38,25 @@ sub compare {
 
     print "**********${basename}*************\n";
     my %tests;
-    foreach my $key (keys %ROUTINES) {
+    my %current = %routines;
+    foreach my $key (keys %current) {
+        my $expected = slurp($key eq 'null' ? $test : "out/$basename");
         $tests{$key} = sub {
-            ok_regression(
-                sub {return &{$ROUTINES{$key}}($input)},
-                $key eq 'null' ? $test : "out/$basename",
-                "$basename - $key"
-            );
+            my $actual = &{$current{$key}}($input);
+            if ($actual eq $expected) {
+                $success{$key} = $basename;
+            }
+            else {
+                delete $routines{$key};
+            }
         };               
     }
-    cmpthese $COUNT, \%tests;
+    my $result = timethese $COUNT, \%tests;
+    cmpthese $result;
 }
+
+foreach my $s (keys %success) {
+    print "$s: $success{$s}\n";
+}
+
+
