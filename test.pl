@@ -12,11 +12,13 @@ use Test::Regression;
 use Perl6::Slurp;
 
 use Null;
+use StripScripts;
 
 Readonly my %ROUTINES => (
     null => \&Null::filter,
+    stripscripts => \&StripScripts::filter,
 );
-Readonly my $COUNT => 10_000;
+Readonly my $COUNT => 100;
 
 my @tests = glob 'in/*';
 
