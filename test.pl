@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 use Carp;
-use Benchmark qw(cmpthese timethis);
+use Benchmark qw(cmpthese);
 use lib qw(lib);
 use Readonly;
 use File::Basename;
@@ -18,36 +18,31 @@ Readonly my %ROUTINES => (
     null => \&Null::filter,
     stripscripts => \&StripScripts::filter,
 );
-Readonly my $COUNT => 100;
+Readonly my $COUNT => 1000;
 
 my @tests = glob 'in/*';
 
 plan tests => (keys %ROUTINES)*@tests*$COUNT;
 
-#cmpthese -1, {
-#    fast => 'sleep 1',
-#    slow => 'sleep 2',
-#};
-
 foreach my $t (@tests) {
     compare($t);
 }
-
-#timethis(10, 'sleep 1');
 
 sub compare {
     my $test = shift;
     my $basename = basename($test);
 
     print "**********${basename}*************\n";
+    my %tests;
     foreach my $key (keys %ROUTINES) {
-        timethis($COUNT, sub {
+        $tests{$key} = sub {
             my $input = slurp $test;
             ok_regression(
                 sub {return &{$ROUTINES{$key}}($input)},
-                "out/$basename",
+                $key eq 'null' ? $test : "out/$basename",
                 "$basename - $key"
             );
-        });               
+        };               
     }
+    cmpthese $COUNT, \%tests;
 }
