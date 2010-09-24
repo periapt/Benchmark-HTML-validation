@@ -24,6 +24,8 @@ sub init_attrib_whitelist  {
     return \%Attrib;
 }
 
+sub output_comment {
+}
 
 1;
 

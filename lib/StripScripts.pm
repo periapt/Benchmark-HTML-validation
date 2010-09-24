@@ -13,7 +13,8 @@ sub filter {
            AllowHref=>1,
            AllowSrc=>1,
            AllowRelURL=>1,
-           EscapeFiltered=>1,
+           EscapeFiltered=>0,
+           BanAllBut=>[qw(div p span em strong h3 img a)],
            Rules   => {
                 div=>1,
                 p=>sub {
@@ -29,9 +30,19 @@ sub filter {
                 em=>1,
                 strong=>1,
                 h3=>1,
-                a=>1,
-                img=>1,
-                '*'=>0,
+                a=>{
+                    href=>1,
+                    title=>1,
+                    required=>[qw(href)],
+                },
+                img=>{
+                    src=>1,
+                    title=>1,
+                    width=>1,
+                    height=>1,
+                    alt=>1,
+                    required=>[qw(src width height)],
+                },
             },
     },
     empty_element_tags=>1
