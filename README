@@ -1,0 +1,320 @@
+
+
+
+
+
+[Beefy_Boxes_and_Bandwidth_Generously_Provided_by_pair_Networks]
+Welcome to the Monastery                                         [RobOMonk]
+  [node                ] [Search]                                PerlMonks
+
+****                             | Log in | Create a new user | The Monastery Gates | Super Search | 
+Dynamically                          | Seekers of Perl Wisdom | Meditations | PerlMonks Discussion | 
+cleaning up         | Obfuscation | Reviews | Cool Uses For Perl | Perl News | Q&amp;A | Tutorials | 
+HTML                                | Poetry | Recent Threads | Newest Nodes | Donate | What's New | 
+fragments
+****
+by
+SilasTheMonk
+(Chaplain)
+ on Sep 23, 2010 at 15:47 EDT ( #861639=perlquestion: print w/ replies,  Need
+xml )                                                                      Help??
+
+ SilasTheMonk has asked for the wisdom of the Perl Monks
+concerning the following question:                              Login:   [user      ]
+I need to be able to take a fragment of HTML and clean it up.   Password [**********]
+We can assume that the outermost element is a "div", though if   ⁰remember me [Login]
+it was not necessary to assume that it would be a bonus. By      What's_my_password?
+"clean up" I mean                                                   Create_A_New_User
+   1. The fragment should be valid XML. In particular I know
+      that my source is not closing img tags properly.         Node Status?
+   2. Any tags apart from: p, a, img, h3, div, em, strong      node_history
+      should be stripped.                                      Node Type:
+   3. For any supported tag all but certain attributes must be perlquestion [id://
+      stripped off.                                            861639]
+   4. Some attributes may require further processing such as   Approved by Corion
+      removing non-local src or href attributes.               Front-paged by Corion
+   5. We should reject tags that do not have certain mandatory help
+      attibutes. No "a" without an href for example.           Chatterbox?
+   6. It must either already be in Debian or just require perl and the web crawler
+      packaging.                                               heard nothing...
+   7. It must be configurable and if possible extendible.      [Refresh]
+   8. I would rather not be starting a new open source
+      project. I know this is an old problem.                  How_do_I_use_this? |
+   9. Degenerate things like empty paragraphs should be        Other_CB_clients
+      removed.                                                 Other Users?
+  10. I should be able to turn it into a Data::FormValidator:: Others chilling in the
+      Filters though I cannot really see how something could   Monastery: (23)
+      meet all the other criteria and not this one.            GrandFather
+Below is a list of things I have tried. Things mentioned in    marto
+Simplify_HTML_programatically but not mentioned below I have   ww
+consciously for some reason. The XML::SAX looks the most       wfsp
+promising to me but the one I have made least progress with.   tirwhan
+Any ideas?                                                     syphilis
+***** HTML::Scrubber *****                                     mojotoad
+This module seemed at first to meet all the criteria -- until  atcroft
+I spotted the issue with unclosed "img" tags. According to the salva
+bug reports there is also an issue with it not recognising     wazoox
+self-closing tags there is an easy work around rt://25477 for  kennethk
+that. That work around does seem to help at all. I guess if    dHarry
+all fails I use this module and apply another filter to fix    jaldhar
+the "img" tags but this is ugly.                               sri
+***** HTML::Tidy *****                                         thezip
+This is not itself in Debian but the underlying library is so  clinton
+I could easily get it added. The perl library itself has       Ratazong
+appalling reviews. It looks to me as if it may not do          davies
+everything I want but combined with HTML::Scrubber may be it   Intrepid
+would.                                                         ssandv
+***** XML::SAX *****                                           gnosti
+This was my experiment of the day. From what I could read of   bhaskar_219
+the docs it looks as if it could do everything I want though   im2
+requiring some code to be written. However the docs are        As of 2010-09-24 11:14
+extremely light -- mostly point at Java documentation. I was   GMT
+experimenting with this as shown below. However once I         Sections?
+introduced an attempt to close off open img tags it started    Seekers_of_Perl_Wisdom
+giving an error
+     mismatched tag at line 2, column 53, byte 141 at /        Cool_Uses_for_Perl
+     usr/lib/perl5/XML/Parser.pm line 187                      Meditations
+As you can see I am not experienced with SAX.                  PerlMonks_Discussion
+#!/usr/bin/perl                                                Categorized_Q&amp;A
+                                                               Tutorials
+use warnings;                                                  Obfuscated_Code
+use strict;                                                    Perl_Poetry
+use Perl6::Slurp;                                              Perl_News
+                                                               See About_the_sections
+my $output = &quot;&quot;;                                     of_PerlMonks
+use XML::SAX::Machines qw(Pipeline);                           Information?
+#use XML::SAX::ParserFactory;                                  PerlMonks_FAQ
+                                                               Guide_to_the_Monastery
+my $machine = Pipeline(MySAXHandler => \$output);              What's_New_at
+                                                               PerlMonks
+$machine->parse_string( join &quot;&quot;, slurp $ARGV[0] );   Voting/Experience
+print &quot;$output\n&quot;;                                   System
+                                                               Tutorials
+package MySAXHandler;                                          Reviews
+use base qw(XML::SAX::Base);                                   Library
+                                                               Perl_FAQs
+                                                               Other_Info_Sources
+sub start_document {                                           Find Nodes?
+    my $self = shift;                                          Nodes_You_Wrote
+    $self->{_supported} = {                                    Super_Search
+        img=>{                                                 List_Nodes_By_Users
+            alt=>1,                                            Newest_Nodes
+            width=>1,                                          Recently_Active
+            height=>1,                                         Threads
+            src=>1,                                            Selected_Best_Nodes
+            title=>1,                                          Best_Nodes
+        },                                                     Worst_Nodes
+        a=>{                                                   Saints_in_our_Book
+            href=>1,                                           Leftovers?
+            title=>1,                                          The_St._Larry_Wall
+        },                                                     Shrine
+        p=>{},                                                 Offering_Plate
+        h3=>{},                                                Awards
+        em=>{},                                                Craft
+        strong=>{},                                            Snippets_Section
+        div=>{},                                               Code_Catacombs
+    };                                                         Quests
+    return $self->SUPER::start_document(shift);                Editor_Requests
+}                                                              Buy_PerlMonks_Gear
+                                                               PerlMonks_Merchandise
+sub start_element {                                            Planet_Perl
+    my ($self, $el) = @_;                                      Perlsphere
+    my $localName = $el->{LocalName};                          Use_Perl
+                                                               Perl.com
+    if (exists $self->{_pending_img}) {                        Perl_5_Wiki
+        my %el = %{$self->{_pending_img}};                     Perl_Jobs
+        delete $self->{_pending_img};                          Perl_Mongers
+        delete $el{Attributes};                                Perl_Directory
+        $self->SUPER::end_element(\%el);                       Perl_documentation
+    }                                                          CPAN
+                                                               Random_Node
+    if (exists $self->{_supported}->{$localName}) {            Voting Booth?
+                                                               *** My favourite poll
+        my $attributes = $self->{_supported}->{$localName};    on PerlMonks is ...
+        foreach my $attr (keys %{$el->{Attributes}}) {         ***
+           my $key = $attr;                                    #Your_first_Perl_Book
+           $key =~ s[\A{}][]xms;                               - the first one ever
+           if (not exists $attributes->{$key}) {               oAverage_number_of
+               delete $el->{Attributes}->{$attr};              caffeinated_beverages
+           }                                                   per_work_day - the
+        }                                                      poll with the highest
+                                                               participation
+        if ($localName eq 'img') {                             oMy_Thoughts_on_the
+            $self->{_pending_img} = $el;                       New_Voting/Experience
+        }                                                      System - the poll with
+                                                               the fewest votes cast
+        return $self->SUPER::start_element($el);               oWhen_I_grow_up,_I
+    }                                                          want_to_be: - one of
+}                                                              the polls with the
+                                                               fewest options
+sub end_element {                                              oPerl_6_will_primarily
+    my ($self, $el) = @_;                                      be: - the first one on
+    my $localName = $el->{LocalName};                          Perl6
+                                                               oWhen_I_see_a_poll -
+    if (exists $self->{_pending_img} and $localName ne 'img')  one of the many polls
+{                                                              about polls
+        my %el = %{$self->{_pending_img}};                     othis poll ;-)
+        delete $self->{_pending_img};                          oyet to come
+        delete $el{Attributes};                                onone - I hate polls.
+        $self->SUPER::end_element(\%el);                       Bah.
+    }                                                          osome other
+                                                               [Vote]
+    if (exists $self->{_supported}->{$localName}) {            Results_(244_votes),
+        return $self->SUPER::end_element($el);                 past_polls
+    }
+}
+
+sub character {
+    my ($self, $el) = @_;
+
+    if (exists $self->{_pending_img}) {
+        my %el = %{$self->{_pending_img}};
+        delete $self->{_pending_img};
+        delete $el{Attributes};
+        $self->SUPER::end_element(\%el);
+    }
+
+    return $self->SUPER::character($el);
+}
+
+1
+[download]
+***** HTML::TreeBuilder *****
+This does quite a good job of closing off the "img" tag but it
+does no cleaning. It also puts in "html" and "body" tags which
+actually I don't want but can at least be easily cleaned off.
+I have tried combining it with HTML::Scrubber but that just
+demonstrates the issues with self closing tags.
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use Carp;
+
+use HTML::TreeBuilder;
+use HTML::Scrubber;
+use Perl6::Slurp;
+
+my $tidy = HTML::TreeBuilder->new();
+my $scrubber = HTML::Scrubber->new(
+    allow => [ qw[ p em stong a img ] ],
+    rules => [
+        img => {
+            src => 1,
+            alt => 1,
+            title => 1,
+            width => 1,
+            height => 1,
+        },
+        a => {
+            href=>1,
+            title=>1,
+        },
+    ],
+);
+$scrubber->{_p}->empty_element_tags(1);
+
+my $html = slurp $ARGV[0];
+
+$tidy->no_expand_entities(1);
+$tidy->p_strict(1);
+print $scrubber->scrub($tidy->parse_content($html)->as_XML);
+[download]
+Edit:
+***** HTML::StripScripts::Parser *****
+I saw this on the Chatterbox last night. It looks very good
+and I am trying it out.
+***** XML::LibXML *****
+This has a forgiving mode and a method for reading fragments.
+I've looked at it but I think the work would move into DTDs.
+***** HTML::Parser *****
+Most of the options I have looked at are based upon this. I
+had steared away from this partly because it is more low-level
+and partly because I thought SAX ought to be better in
+principle.
+***** Marpa::HTML *****
+Okay now I have a wealth of options.
+Comment_on Dynamically cleaning up HTML fragments
+Select or Download Code
+Re:_Dynamically_cleaning_up_HTML_fragments
+by halfcountplus (Pilgrim) on Sep 23, 2010 at 20:13 EDT
+      >>We should reject tags that do not have certain
+      mandatory attibutes. No "a" without an href for
+      example.
+      Local anchors do not have "href" as an
+      attribute, they have a "name", eg <a name="local
+      page anchor">here</a> ;)
+      Are you familiar with the event driven HTML::
+      Parser? I have not used it to clean invalid
+      source, but here's an idea (eg): when your start
+      tag handler hits an img tag, put the entire tag
+      text into an otherwise null global. In both the
+      end and start tag handler, you check this global
+      for content; if the img is not closed add / to
+      it.
+      Alternately, I can tell you for a fact that
+      HTML::Parser treats / used XHTMLishly (ie, not
+      the first character in the tag) as an attribute.
+      Therefore, with tags like image you can check
+      for the / attribute and if not present, do the
+      edit.
+      The rest of your requirements -- stripping
+      certain tags, working with attributes, checking
+      for text inside p tags, etc. -- can also easily
+      be accomplished via HTML::Parser, but you will
+      have to write some code to do it.                [reply]
+    * Re^2:_Dynamically_cleaning_up_HTML_fragments
+      by Anonymous_Monk on Sep 23, 2010 at 21:04 EDT
+          o Fragment identifiers should be id
+            attributes, which can go on any element
+            and are unique within the document,
+            instead of name attributesm, which need
+            not be unique and only belong on certain
+            elements.                                  [reply]
+Re:_Dynamically_cleaning_up_HTML_fragments
+by bellaire (Friar) on Sep 23, 2010 at 21:04 EDT
+    * I have not used it extensively, but another
+      module that looks really neat for parsing and
+      "tidying" HTML is Marpa-HTML. Their html_fmt
+      demo does handling of missing start and end
+      tags, and the dist's documentation talks about
+      being able to selectively eliminate certain
+      types of tag.                                    [reply]
+Re:_Dynamically_cleaning_up_HTML_fragments
+by trwww (Chaplain) on Sep 24, 2010 at 03:34 EDT
+      I think the default driver for SAX checks for
+      well-formed-ness of the input before forwarding
+      the events.
+      I provided an example for someone looking to do
+      something similar back in Re:_Simplify_HTML
+      programatically. There you can see how to start
+      your pipeline using the HTML driver.             [reply]
+    * Re^2:_Dynamically_cleaning_up_HTML_fragments
+      by SilasTheMonk (Chaplain) on Sep 24, 2010 at 05:39 EDT
+          o Yes I looked at that node as you can see
+            from my original post. I tried your
+            example which worked as far as it went.
+            However I could not see what the HTML
+            driver actually contributed, and since it
+            depends on HTML::TreeBuilder all the
+            advantages of using a SAX parser are
+            undermined. My example (which also worked
+            upto a point) did not have a dependency.
+            My example only broke down when I tried to
+            address the closing "img" issue. If you
+            know how to fix that I would really
+            appreciate it.                             [reply]
+Re:_Dynamically_cleaning_up_HTML_fragments
+by wfsp (Abbot) on Sep 24, 2010 at 04:12 EDT
+    * I highly recommend having a look at Dave
+      Raggett's HTML_Tidy. I've found it to be a very
+      nifty bit of kit for these types of jobs.
+      Careful tweaking of the config would, I beleive,
+      achieve many of the tasks you are looking at.    [reply]
+Back to Seekers_of_Perl_Wisdom
+
+
+PerlMonks graciously bestowed by Tim_Vroom.
+PerlMonks went on a couple dates, and then decided to shack up with The_Perl
+Foundation.
+Speedy Servers and Bandwidth Generously Provided by pair_Networks
