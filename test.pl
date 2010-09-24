@@ -18,7 +18,7 @@ use HTMLTidy;
 Readonly my %ROUTINES => (
     null => \&Null::filter,
     stripscripts => \&StripScripts::filter,
-    htmltidy=>\&HTMLTidy::filter,
+#    htmltidy=>\&HTMLTidy::filter,
 );
 Readonly my $COUNT => 1000;
 
