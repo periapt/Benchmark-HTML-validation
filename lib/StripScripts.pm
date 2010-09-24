@@ -3,7 +3,6 @@ use strict;
 use warnings;
 use Carp;
 use HTML::Parser::Periapt;
-use Perl6::Slurp;
 
 sub filter {
     my $text = shift;
