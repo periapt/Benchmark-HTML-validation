@@ -8,28 +8,50 @@ use lib qw(lib);
 use Readonly;
 use File::Basename;
 use Perl6::Slurp;
+use Text::SimpleTable;
 
 use Null;
 use StripScripts;
 use HTMLTidy;
 use Defang;
-# ToDO: Strip, Detoxify, Marpa
+use MarpaParser;
+use Detoxifier;
+use HP;
+# ToDO: Restrict, Laundry
 
 my %routines = (
     null => \&Null::filter,
     stripscripts => \&StripScripts::filter,
-    defang=>\&Defang::filter,
-    htmltidy=>\&HTMLTidy::filter,
+#    detoxifier=> \&Detoxifier::filter,
+#    defang=>\&Defang::filter,
+#    htmltidy=>\&HTMLTidy::filter,
+#    marpa=>\&MarpaParser::filter,
+#    hp=>\&HP::filter,
 );
-Readonly my $COUNT => 10_000;
+Readonly my $COUNT => -2;
 
 my @tests = glob 'in/*';
 
 my %success;
+my %total;
 
 foreach my $t (@tests) {
+#    next unless $t =~ /badhref/;
     compare($t);
 }
+
+my $table = Text::SimpleTable->new(10,10,10,10,10,10);
+foreach my $s (keys %success) {
+    my @results = @{$total{$s}};
+    my @row = ($s, $success{$s});
+    for(my $i = 0; $i<5; $i++) {
+        push @row, sprintf("%.8f", $results[$i]/$results[5]);
+    }
+    $table->row(@row);
+}
+print $table->draw;
+
+exit(0);
 
 sub compare {
     my $test = shift;
@@ -52,11 +74,19 @@ sub compare {
         };               
     }
     my $result = timethese $COUNT, \%tests;
+    totalify($result);
     cmpthese $result;
 }
 
-foreach my $s (keys %success) {
-    print "$s: $success{$s}\n";
+sub totalify {
+    my $result = shift;
+    foreach my $key (keys %$result) {
+        if (not exists $total{$key}) {
+            $total{$key} = [0,0,0,0,0,0];
+        }
+        for(my $i = 0; $i<6; $i++) {
+            $total{$key}->[$i] += $result->{$key}->[$i];
+        }
+    }
 }
-
 

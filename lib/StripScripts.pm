@@ -31,7 +31,7 @@ sub filter {
                 strong=>1,
                 h3=>1,
                 a=>{
-                    href=>1,
+                    href=>qr{\A/\w[\w/\#]*\z}xms,
                     title=>1,
                     required=>[qw(href)],
                 },
